@@ -141,6 +141,15 @@ def extract_livecamera(soup, LANG):
         return ["Live camera / Ζωντανή εικόνα", "Not available"]
 
 
+def get_station_status(soup, LANG):
+    soup = soup.find_all("div", {"class": "offline"})
+    status = "Online" if LANG == 2 else "Ενεργο"
+
+    if soup:
+        status = soup[0].find("span").text
+
+    return status
+
 def print_data(what, values):
     """
     print data in a nice way
