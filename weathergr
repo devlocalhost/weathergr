@@ -77,6 +77,8 @@ def extract_realtime_data(soup, LANG):
     extract the "realtime" - most important data
     """
 
+    # TODO: handle unknown stations?
+
     realtime_data = soup.find_all("div", {"class": "realtime"})[0].find_all("span")
 
     last_updated_strings = realtime_data[0].text.split("/")
@@ -158,6 +160,8 @@ def get_station_status(soup, LANG):
     returns the status of the station
     """
 
+    # TODO: also get station name
+
     soup = soup.find_all("div", {"class": "offline"})
     status = "Online" if LANG == 2 else "Ενεργο"
 
@@ -208,7 +212,9 @@ def main():
     # the not so important, but useful...?
 
     # sometimes the webcam image is not the
-    # "absolute" (http://...) path, so...
+    # "absolute" (http://...) path
+    # this wont always work:
+    # TODO: handle if webcam not available
 
     if not webcam_img.startswith("http"):
         webcam_img = METEO_URL + webcam_img
