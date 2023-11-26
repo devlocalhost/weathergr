@@ -131,10 +131,14 @@ def extract_hilows_data(soup):
 
 
 def extract_livecamera(soup, LANG):
-    string = soup.find_all("div", {"class": "cameras"})[0].find_all("span")[LANG - 2].text
-    webcam_image = soup.find_all("div", {"class": "camera_holder"})[0].find_all("a")[0].get("href")
+    try:
+        string = soup.find_all("div", {"class": "cameras"})[0].find_all("span")[LANG - 2].text
+        webcam_image = soup.find_all("div", {"class": "camera_holder"})[0].find_all("a")[0].get("href")
 
-    return [string, webcam_image]
+        return [string, webcam_image]
+
+    except IndexError:
+        return ["Live camera / Ζωντανή εικόνα", "Not available"]
 
 
 def print_data(what, values):
@@ -177,11 +181,17 @@ def main():
     ) = extract_hilows_data(soup)
     # the not so important, but useful...?
 
+    # sometimes the webcam image is not the
+    # "absolute" (http://...) path, so...
+
+    if not webcam_img.startswith("http"):
+        webcam_img = METEO_URL + webcam_img
+
     print_data(what, values)
     print_data(his_text, his_values)
     print_data(lows_text, lows_values)
     print_data(remaining_text, remaining_values)
-    print(f"{string:>19}: {METEO_URL}{webcam_img}")
+    print(f"{string:>19}: {webcam_img}")
 
 
 if __name__ == "__main__":
