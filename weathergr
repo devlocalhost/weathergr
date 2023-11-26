@@ -131,9 +131,21 @@ def extract_hilows_data(soup):
 
 
 def extract_livecamera(soup, LANG):
+    """
+    get the live camera images
+    """
+
     try:
-        string = soup.find_all("div", {"class": "cameras"})[0].find_all("span")[LANG - 2].text
-        webcam_image = soup.find_all("div", {"class": "camera_holder"})[0].find_all("a")[0].get("href")
+        string = (
+            soup.find_all("div", {"class": "cameras"})[0]
+            .find_all("span")[LANG - 2]
+            .text
+        )
+        webcam_image = (
+            soup.find_all("div", {"class": "camera_holder"})[0]
+            .find_all("a")[0]
+            .get("href")
+        )
 
         return [string, webcam_image]
 
@@ -142,6 +154,10 @@ def extract_livecamera(soup, LANG):
 
 
 def get_station_status(soup, LANG):
+    """
+    returns the status of the station
+    """
+
     soup = soup.find_all("div", {"class": "offline"})
     status = "Online" if LANG == 2 else "Ενεργο"
 
@@ -149,6 +165,7 @@ def get_station_status(soup, LANG):
         status = soup[0].find("span").text
 
     return status
+
 
 def print_data(what, values):
     """
