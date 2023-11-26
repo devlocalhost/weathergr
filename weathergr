@@ -130,6 +130,13 @@ def extract_hilows_data(soup):
     )
 
 
+def extract_livecamera(soup, LANG):
+    string = soup.find_all("div", {"class": "cameras"})[0].find_all("span")[LANG - 2].text
+    webcam_image = soup.find_all("div", {"class": "camera_holder"})[0].find_all("a")[0].get("href")
+
+    return [string, webcam_image]
+
+
 def print_data(what, values):
     """
     print data in a nice way
@@ -149,12 +156,15 @@ def main():
     args = parse_arguments()
 
     METEO_URL = f"https://penteli.meteo.gr/stations/{args.station}/"
+    LANG = 3 if args.language == "el" else 2
+
     soup = fetch_data(METEO_URL)
 
     if not soup:
         return
 
-    what, values = extract_realtime_data(soup, 3 if args.language == "el" else 2)
+    what, values = extract_realtime_data(soup, LANG)
+    string, webcam_img = extract_livecamera(soup, LANG)
     # the important data
 
     (
@@ -171,6 +181,7 @@ def main():
     print_data(his_text, his_values)
     print_data(lows_text, lows_values)
     print_data(remaining_text, remaining_values)
+    print(f"{string:>19}: {METEO_URL}{webcam_img}")
 
 
 if __name__ == "__main__":
