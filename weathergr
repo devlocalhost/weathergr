@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+
+"""
+weathergr - a wrapper for meteo.gr
+"""
+
+import argparse
+
+import requests
+from bs4 import BeautifulSoup
+
+arguments = [
+    {
+        "options": ["-l", "--language"],
+        "kwargs": {
+            "type": str,
+            "default": "en",
+            "metavar": "LANG",
+            "help": "Language for strings. Available: en (english), el (greek). Default: en",
+        },
+    },
+    {
+        "options": ["-s", "--station"],
+        "kwargs": {
+            "type": str,
+            "default": "helexpo",
+            "metavar": "STATION",
+            "help": "Meteo station to use. Default: helexpo (Thessaloniki)",
+        },
+    },
+]
+
+
+def custom_help_formatter(prog):
+    """
+    fixing the ugly looking help menu
+    """
+
+    return argparse.HelpFormatter(prog, max_help_position=46)
+
+
+def parse_arguments():
+    """
+    create arguments
+    """
+
+    parser = argparse.ArgumentParser(
+        formatter_class=custom_help_formatter,
+        description="weathergr - a wrapper for meteo.gr",
+    )
+
+    for arg in arguments:
+        parser.add_argument(*arg["options"], **arg["kwargs"])
+
+    return parser.parse_args()
+
+
+def fetch_data(url):
+    """
+    fetch/scrape data fron METEO_URL
+    """
+
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+
+        return BeautifulSoup(response.content, "html.parser", from_encoding="utf-8")
+
+    except requests.RequestException as e:
+        print(f"Error fetching data: {e}")
+
+        return None
+
+
+def extract_realtime_data(soup, LANG):
+    """
+    extract the "realtime" - most important data
+    """
+
+    realtime_data = soup.find_all("div", {"class": "realtime"})[0].find_all("span")
+
+    last_updated_strings = realtime_data[0].text.split("/")
+    last_updated = (
+        last_updated_strings[0].strip()
+        if LANG == 2
+        else last_updated_strings[1].strip()
+    )
+
+    what = [last_updated] + [
+        realtime_data[i].text for i in range(LANG, len(realtime_data), 3)
+    ]
+    values = [realtime_data[1].text] + [
+        realtime_data[j].text for j in range(4, len(realtime_data), 3)
+    ]
+
+    # sometimes there can be more data, so using
+    # len(realtime_data) is better, but it could
+    # change
+
+    return what, values
+
+
+def extract_hilows_data(soup):
+    """
+    extract the (usually) 4 high & low data temps
+    """
+
+    hilows_data = soup.find_all("div", {"class": "hilows"})[0].find_all("span")[
+        1:
+    ]  # Remove the first element
+
+    his_text = [hilows_data[k].text for k in range(0, 16, 4)]
+    his_values = [hilows_data[l].text for l in range(2, 16, 4)]
+    lows_text = [hilows_data[z].text for z in range(1, 16, 4)]
+    lows_values = [hilows_data[x].text for x in range(3, 16, 4)]
+    remaining_text = [hilows_data[c].text for c in range(16, 23, 2)]
+    remaining_values = [hilows_data[v].text for v in range(17, 24, 2)]
+
+    # the comment in extract_realtime_data function
+    # applies here aswell. for now, till it breaks,
+    # it is what it is
+
+    return (
+        his_text,
+        his_values,
+        lows_text,
+        lows_values,
+        remaining_text,
+        remaining_values,
+    )
+
+
+def print_data(what, values):
+    """
+    print data in a nice way
+    """
+
+    for w, v in zip(what, values):
+        print(f"{w:>19}: {v}")
+
+    print()
+
+
+def main():
+    """
+    main method
+    """
+
+    args = parse_arguments()
+
+    METEO_URL = f"https://penteli.meteo.gr/stations/{args.station}/"
+    soup = fetch_data(METEO_URL)
+
+    if not soup:
+        return
+
+    what, values = extract_realtime_data(soup, 3 if args.language == "el" else 2)
+    # the important data
+
+    (
+        his_text,
+        his_values,
+        lows_text,
+        lows_values,
+        remaining_text,
+        remaining_values,
+    ) = extract_hilows_data(soup)
+    # the not so important, but useful...?
+
+    print_data(what, values)
+    print_data(his_text, his_values)
+    print_data(lows_text, lows_values)
+    print_data(remaining_text, remaining_values)
+
+
+if __name__ == "__main__":
+    main()
